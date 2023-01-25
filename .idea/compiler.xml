@@ -9,5 +9,8 @@
         <module name="sklep-z-elektronika" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="sklep-z-elektronika" target="1.8" />
+    </bytecodeTargetLevel>
   </component>
 </project>
