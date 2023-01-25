@@ -1,29 +1,10 @@
-import Helpers.TestStatus;
-import io.github.bonigarcia.wdm.WebDriverManager;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.openqa.selenium.*;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.io.FileHandler;
 import org.openqa.selenium.support.ui.ExpectedConditions;
-import org.openqa.selenium.support.ui.WebDriverWait;
+import static org.junit.jupiter.api.Assertions.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.concurrent.TimeUnit;
+public class CartTests extends BaseTest {
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-
-public class CartTests {
-    WebDriver driver;
-    WebDriverWait wait;
     String productId = "12";
     By productPageAddToCartButton = By.cssSelector("button[name='add-to-cart']");
     By categoryPageAddToCartButton = By.cssSelector(".post-" + productId + ">.add_to_cart_button");
@@ -33,22 +14,6 @@ public class CartTests {
     By updateCartButton = By.cssSelector("[name='update_cart']");
     By shopTable = By.cssSelector(".shop_table");
     String[] productPages = {"/hoodie-with-logo/", "/hoodie-with-logo/"};
-    @RegisterExtension
-    TestStatus status = new TestStatus();
-
-    @BeforeEach
-    public void testSetUp() {
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-        driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
-        wait = new WebDriverWait(driver, 7);
-
-        driver.manage().window().setSize(new Dimension(1920, 900));
-        driver.manage().window().setPosition(new Point(8, 30));
-
-        driver.navigate().to("http://zelektronika.store");
-        driver.findElement(By.cssSelector(".woocommerce-store-notice__dismiss-link")).click();
-    }
 
     @Test
     public void addToCartFromProductPageTest() {
@@ -109,22 +74,6 @@ public class CartTests {
     }
 
 
-    @AfterEach
-    public void closeDriver(TestInfo info) throws IOException {
-        if (status.isFailed) {
-            System.out.println("Test screenshot is available at: " + takeScreenshot(info));
-        }
-        driver.quit();
-    }
-
-    private String takeScreenshot(TestInfo info) throws IOException {
-        File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
-        LocalDateTime timeNow = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH-mm-ss");
-        String path = "src/main/resources/screenshots/" + info.getDisplayName() + " " + formatter.format(timeNow) + ".png";
-        FileHandler.copy(screenshot, new File(path));
-        return path;
-    }
 
     private void addProductToCart() {
         WebElement addToCartButton = driver.findElement(productPageAddToCartButton);
