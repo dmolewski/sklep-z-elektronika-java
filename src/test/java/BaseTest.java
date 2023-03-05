@@ -33,8 +33,9 @@ public class BaseTest {
         driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
         wait = new WebDriverWait(driver, 7);
 
-        driver.manage().window().setSize(new Dimension(1400, 800));
-        driver.manage().window().setPosition(new Point(0, 0));
+        //driver.manage().window().setSize(new Dimension(1400, 800));
+        driver.manage().window().maximize();
+        //driver.manage().window().setPosition(new Point(0, 0));
 
         driver.navigate().to("http://zelektronika.store");
         driver.findElement(By.cssSelector(".woocommerce-store-notice__dismiss-link")).click();

@@ -26,18 +26,21 @@ public class PaymentMethodsTests extends BaseTest {
     By cvcFrame = By.cssSelector("#stripe-cvc-element iframe");
     By cvcField = By.cssSelector("[name='cvc']");
 
-    By secureAuthorizeFrame = By.xpath(".//iframe[contains(@src, 'authorize-with-url-inner')]");
-    By secondStepSecure = By.cssSelector(".AuthorizeWithUrlApp-content");
+    By secureAuthorizeFrame = By.xpath(".//iframe[contains(@src, 'three-ds-2-challenge')]");
+    By secondStepSecure = By.cssSelector(".ThreeDS2-challenge");
     By authorizeButton = By.cssSelector("button#test-source-authorize-3ds");
     By failButton = By.cssSelector("button#test-source-fail-3ds");
 
     By orderButton = By.cssSelector("#place_order");
 
-    By paymentMethod = By.cssSelector("[for='payment_method_stripe']");
+    By paymentMethod = By.cssSelector("label[for='payment_method_stripe']");
+
+    By shippingMethod = By.cssSelector("label[for='shipping_method_0_flat_rate2']");
+
 
     @Test
     public void ordinarySuccessfulPaymentTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
 
         fillOutCheckoutForm();
@@ -53,7 +56,7 @@ public class PaymentMethodsTests extends BaseTest {
 
     @Test
     public void secureSuccessfulPaymentTest() {
-        addProductAndViewCart(webSite + "/product/hoodie-with-logo/");
+        addProductAndViewCart(webSite + "/product/glosnik/");
         driver.findElement(checkoutButton).click();
 
         fillOutCheckoutForm();
@@ -75,7 +78,7 @@ public class PaymentMethodsTests extends BaseTest {
 
     @Test
     public void secureUnsuccessfulPaymentTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
 
         fillOutCheckoutForm();
@@ -95,17 +98,12 @@ public class PaymentMethodsTests extends BaseTest {
 
     @Test
     public void cardDeclinedTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
         fillOutCheckoutForm();
 
-        fillOutCardData("4000008400001629", "0226", "456");
+        fillOutCardData("4000000000000002", "0226", "456");
         driver.findElement(orderButton).click();
-
-        switchToFrame(secureAuthorizeFrame);
-        switchToFrame(secondStepSecure);
-        wait.until(ExpectedConditions.elementToBeClickable(authorizeButton)).submit();
-        driver.switchTo().defaultContent();
 
         String errorMessage = waitForErrorMessage();
         String cardDeclinedErrorMessage = "Karta została odrzucona.";
@@ -114,8 +112,9 @@ public class PaymentMethodsTests extends BaseTest {
 
     @Test
     public void incorrectCardNumberValidationTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
+        fillOutCheckoutForm();
         fillOutCardData("4000000000003221", "0226", "456");
         driver.findElement(orderButton).click();
         String wrongCardNumberErrorMessage = waitForErrorMessage();
@@ -125,19 +124,21 @@ public class PaymentMethodsTests extends BaseTest {
 
     @Test
     public void incompleteCardNumberValidationTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
+        fillOutCheckoutForm();
         fillOutCardData("", "0226", "456");
         driver.findElement(orderButton).click();
         String incompleteCardNumberErrorMessage = waitForErrorMessage();
-        String expectedErrorMessage = "Numer karty jest niekompletnyl.";
+        String expectedErrorMessage = "Numer karty jest niekompletny.";
         assertEquals(expectedErrorMessage, incompleteCardNumberErrorMessage, "Error message about incomplete card number has not been found.");
     }
 
     @Test
     public void incompleteExpirationDateValidationTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
+        fillOutCheckoutForm();
         fillOutCardData("4000000000003220", "", "456");
         driver.findElement(orderButton).click();
         String incompleteExpirationDateErrorMessage = waitForErrorMessage();
@@ -147,8 +148,9 @@ public class PaymentMethodsTests extends BaseTest {
 
     @Test
     public void cardExpiredValidationTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
+        fillOutCheckoutForm();
         fillOutCardData("4000000000003220", "10/18", "456");
         driver.findElement(orderButton).click();
         String cardExpiredErrorMessage = waitForErrorMessage();
@@ -158,8 +160,9 @@ public class PaymentMethodsTests extends BaseTest {
 
     @Test
     public void incompleteCvcNumberValidationTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
+        fillOutCheckoutForm();
         fillOutCardData("4000000000003220", "10/30", "");
         driver.findElement(orderButton).click();
         String incompleteCvcNumberErrorMessage = waitForErrorMessage();
@@ -209,7 +212,7 @@ public class PaymentMethodsTests extends BaseTest {
 
     private void waitForOrderToComplete() {
         WebDriverWait wait = new WebDriverWait(driver, 20);
-        wait.until(ExpectedConditions.urlContains("/checkout/order-received/"));
+        wait.until(ExpectedConditions.urlContains("/checkout/zamowienie-otrzymane/"));
     }
 
     private String waitForErrorMessage() {
@@ -219,6 +222,7 @@ public class PaymentMethodsTests extends BaseTest {
     }
 
     private void fillOutCardData(String cardNumber, String expirationDate, String cvc) {
+        driver.findElement(shippingMethod).click();
         driver.findElement(paymentMethod).click();
         wait.until(ExpectedConditions.invisibilityOfElementLocated(loadingIcon));
 

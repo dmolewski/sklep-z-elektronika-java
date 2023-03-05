@@ -2,6 +2,7 @@ import org.junit.jupiter.api.*;
 import org.openqa.selenium.*;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+
 import java.util.Calendar;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,6 +27,7 @@ public class PaymentTests extends BaseTest {
     By cvcFrame = By.cssSelector("#stripe-cvc-element iframe");
     By cvcField = By.cssSelector("[name='cvc']");
     By createNewAccountCheckbox = By.cssSelector("#createaccount");
+    By username = By.cssSelector("#account_username");
     By password = By.cssSelector("#account_password");
     By summaryDate = By.cssSelector(".date>strong");
     By summaryPrice = By.cssSelector(".total .amount");
@@ -36,12 +38,12 @@ public class PaymentTests extends BaseTest {
     By summaryOrderNumber = By.cssSelector(".order>strong");
 
     By orderButton = By.cssSelector("#place_order");
-    By paymentMethod = By.cssSelector("[for='payment_method_stripe']");
-
+    By paymentMethod = By.cssSelector("label[for='payment_method_stripe']");
+    By shippingMethod = By.cssSelector("label[for='shipping_method_0_flat_rate2']");
 
     @Test
     public void buyWithoutAccountTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
         fillOutCheckoutForm("dmolewski@gmail.com");
         fillOutCardData(true);
@@ -54,12 +56,14 @@ public class PaymentTests extends BaseTest {
 
     @Test
     public void buyWithNewAccountTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
-        fillOutCheckoutForm("test@testelka.pl");
+
+        int randomNumber = (int)(Math.random() * 100) + 1;
+        fillOutCheckoutForm("dmolewski+"+randomNumber+"@gmail.com");
         fillOutCardData(true);
         driver.findElement(createNewAccountCheckbox).click();
-        wait.until(ExpectedConditions.elementToBeClickable(password)).sendKeys("zupełnieprzypadkowehasł0");
+        wait.until(ExpectedConditions.elementToBeClickable(password)).sendKeys("testowekontoztestowymhaslem");
         orderAndWaitToComplete();
         goToMyAccountOrders();
         int actualNumberOfOrders = driver.findElements(By.cssSelector("tr.order")).size();
@@ -70,15 +74,15 @@ public class PaymentTests extends BaseTest {
                         " but was: " + actualNumberOfOrders);
 
         //deleting user after test
-        driver.findElement(By.cssSelector(".woocommerce-MyAccount-navigation-link--")).click();
-        wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(".delete-me"))).click();
-        wait.until(ExpectedConditions.alertIsPresent());
-        driver.switchTo().alert().accept();
+        driver.findElement(By.cssSelector("a[href='http://zelektronika.store/my-account/wpf-delete-account/']")).click();
+        wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("div[class='wpfda-submit'] button[type='submit']"))).click();
+        //wait.until(ExpectedConditions.alertIsPresent());
+        //driver.switchTo().alert().accept();
     }
 
     @Test
     public void orderSummaryTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
 
         fillOutCheckoutForm("dmolewski+2@gmail.com");
@@ -89,7 +93,7 @@ public class PaymentTests extends BaseTest {
         String dateFromSummary = driver.findElement(summaryDate).getText();
         String currentDate = getCurrentDate();
         String actualPrice = driver.findElement(summaryPrice).getText();
-        String expectedPrice = "45,00 zł";
+        String expectedPrice = "499,00 zł";
         String actualPaymentMethod = driver.findElement(summaryPaymentMethod).getText();
         String expectedPaymentMethod = "Karta płatnicza (Stripe)";
         int actualNumberOfProducts = driver.findElements(summaryProductRows).size();
@@ -97,7 +101,7 @@ public class PaymentTests extends BaseTest {
         String actualProductQuantity = driver.findElement(summaryProductQuantity).getText();
         String expectedProductQuantity = "× 1";
         String actualProductName = driver.findElement(summaryProductName).getText();
-        String expectedProductName = "Bluza";
+        String expectedProductName = "Głośnik";
 
         assertAll(
                 () -> assertTrue(orderNumber > 0, "Order number is not bigger than 0"),
@@ -128,11 +132,11 @@ public class PaymentTests extends BaseTest {
         By usernameField = By.cssSelector("#username");
         By passwordField = By.cssSelector("#password");
         By loginButton = By.cssSelector("[name='login']");
-        String username = "dmolewski+konto@gmail.com";
-        String password = "hasłodokonta";
+        String username = "dmolewski+sklep@gmail.com";
+        String password = "testowekontoztestowymhaslem";
         By expandLoginForm = By.cssSelector(".showlogin");
 
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
 
         wait.until(ExpectedConditions.elementToBeClickable(expandLoginForm)).click();
@@ -140,7 +144,7 @@ public class PaymentTests extends BaseTest {
         wait.until(ExpectedConditions.elementToBeClickable(usernameField)).sendKeys(username);
         wait.until(ExpectedConditions.elementToBeClickable(passwordField)).sendKeys(password);
         driver.findElement(loginButton).click();
-
+        fillOutCheckoutForm("");
         fillOutCardData(true);
         String orderNumber = orderAndWaitToComplete();
         goToMyAccountOrders();
@@ -152,7 +156,7 @@ public class PaymentTests extends BaseTest {
 
     @Test
     public void obligatoryFieldsValidationMessageTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
         fillOutCardData(false);
         String errorMessage = orderAndWaitForErrorMessage();
@@ -178,15 +182,14 @@ public class PaymentTests extends BaseTest {
 
     @Test
     public void phoneWrongFormatTest() {
-        addProductAndViewCart("http://zelektronika.store/product/hoodie-with-logo/");
+        addProductAndViewCart("http://zelektronika.store/product/glosnik/");
         driver.findElement(checkoutButton).click();
         fillOutCheckoutForm("dmolewski+2@gmail.com", "phone number");
         fillOutCardData(true);
         String errorMessage = orderAndWaitForErrorMessage();
-        String expectedErrorMessage = "Numer telefonu płatnika nie jest poprawnym numerem telefonu..";
-        ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", errorMessage);
+        String expectedErrorMessage = "Numer telefonu płatnika nie jest poprawnym numerem telefonu.";
+        //((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", errorMessage);
         assertEquals(expectedErrorMessage, errorMessage, "Error message was not correct. Expected: " + expectedErrorMessage + " but was: " + errorMessage);
-
 
     }
 
@@ -227,15 +230,14 @@ public class PaymentTests extends BaseTest {
 
     private String getCurrentDate() {
         Calendar date = Calendar.getInstance();
-        String fullDate = getPolishMonth(date.get(Calendar.MONTH)) + " " +
-                date.get(Calendar.DAY_OF_MONTH) + ", " + date.get(Calendar.YEAR);
+        String fullDate = date.get(Calendar.DAY_OF_MONTH) + " " + getPolishMonth(date.get(Calendar.MONTH)) + " " + date.get(Calendar.YEAR);
         return fullDate;
     }
 
     private String orderAndWaitToComplete() {
         driver.findElement(orderButton).click();
         WebDriverWait wait = new WebDriverWait(driver, 20);
-        wait.until(ExpectedConditions.urlContains("/checkout/order-received/"));
+        wait.until(ExpectedConditions.urlContains("/checkout/zamowienie-otrzymane/"));
         return wait.until(ExpectedConditions.presenceOfElementLocated(summaryOrderNumber)).getText();
     }
 
@@ -246,13 +248,13 @@ public class PaymentTests extends BaseTest {
     }
 
     private String getPolishMonth(int numberOfMonth) {
-        String[] monthNames = {"Styczeń", "Luty", "Marzec", "Kwiecień", "Maj", "Czerwiec",
-                "Lipiec", "Sierpień", "Wrzesień", "Październik", "Listopad", "Grudzień"};
+        String[] monthNames = {"stycznia", "lutego", "marca", "kwietnia", "maja", "czerwca",
+                "lipca", "sierpnia", "września", "października", "listopada", "grudnia"};
         return monthNames[numberOfMonth];
     }
 
     private void goToMyAccountOrders() {
-        driver.findElement(By.cssSelector("#menu-menu>.my-account")).click();
+        driver.findElement(By.cssSelector("li[id='menu-item-19']")).click();
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(".woocommerce-MyAccount-navigation-link--orders"))).click();
         wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".woocommerce-MyAccount-orders")));
     }
@@ -267,7 +269,10 @@ public class PaymentTests extends BaseTest {
         wait.until(ExpectedConditions.elementToBeClickable(countryCodeArrow)).click();
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("li[id*='-PL']"))).click();
         wait.until(ExpectedConditions.elementToBeClickable(addressField)).click();
+        wait.until(ExpectedConditions.elementToBeClickable(addressField)).clear();
         wait.until(ExpectedConditions.elementToBeClickable(addressField)).sendKeys("Diamentowa 145");
+        wait.until(ExpectedConditions.elementToBeClickable(postalCodeField)).click();
+        wait.until(ExpectedConditions.elementToBeClickable(postalCodeField)).clear();
         wait.until(ExpectedConditions.elementToBeClickable(postalCodeField)).sendKeys("71-232");
         wait.until(ExpectedConditions.elementToBeClickable(cityField)).sendKeys("Szczecin");
         wait.until(ExpectedConditions.elementToBeClickable(phoneField)).sendKeys(phone);
