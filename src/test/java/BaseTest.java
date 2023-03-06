@@ -1,14 +1,14 @@
-import Helpers.TestStatus;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import io.qameta.allure.Allure;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.extension.RegisterExtension;
+
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.io.FileHandler;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,13 +20,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
 public class BaseTest {
+    private static final Logger log = LoggerFactory.getLogger(BaseTest.class);
     protected WebDriver driver;
     protected WebDriverWait wait;
 
-    @RegisterExtension
-    TestStatus status = new TestStatus();
-
-    @BeforeEach
+    @BeforeClass
     public void testSetUp() {
         WebDriverManager.chromedriver().setup();
         driver = new ChromeDriver();
@@ -41,32 +39,26 @@ public class BaseTest {
         driver.findElement(By.cssSelector(".woocommerce-store-notice__dismiss-link")).click();
     }
 
-    @AfterEach
-    public void closeDriver(TestInfo info) {
-        if (status.isFailed) {
-            String path = takeScreenshot(info);
-            System.out.println("Screenshot of the failed test is available at: " + path);
-            addScreenshotToReport(path);
-        }
+    @AfterClass
+    public void closeBrowser() {
         driver.quit();
     }
 
-    private String takeScreenshot(TestInfo info) {
+    public String takeScreenshot(WebDriver driver, String testMethodName) {
         File screenshot = ((TakesScreenshot) driver).getScreenshotAs(OutputType.FILE);
         LocalDateTime timeNow = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH-mm-ss");
         File screenshotsDirectory = new File("screenshots/");
-
         if (!screenshotsDirectory.exists()) {
             screenshotsDirectory.mkdirs();
         }
-
-        String path = "screenshots/" + info.getDisplayName() + " - " + formatter.format(timeNow) + ".png";
+        String path = "screenshots/" + testMethodName + " " + formatter.format(timeNow) + ".png";
         try {
             FileHandler.copy(screenshot, new File(path));
         } catch (IOException e) {
             e.printStackTrace();
         }
+        addScreenshotToReport(path);
         return path;
     }
 
@@ -78,5 +70,9 @@ public class BaseTest {
             e.printStackTrace();
         }
         Allure.addAttachment("Screenshot", stream);
+    }
+
+    public static void saveLink(WebDriver driver) {
+        Allure.addAttachment("Link do strony: ", driver.getCurrentUrl());
     }
 }
