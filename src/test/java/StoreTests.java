@@ -427,6 +427,7 @@ public class StoreTests extends BaseTest {
     private void verifySearchResults(String searchTerm) {
         WebDriverWait wait = new WebDriverWait(driver, 10);
         wait.until(ExpectedConditions.urlContains(searchTerm));
+        wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector(".product")));
 
         List<WebElement> searchResultElements = driver.findElements(By.cssSelector(".product"));
         int numSearchResults = searchResultElements.size();
@@ -528,9 +529,15 @@ public class StoreTests extends BaseTest {
     }
 
     private void fillOutCardData(String cardNumber, String expirationDate, String cvc) {
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(loadingIcon));
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".blockOverlay")));
 
-        driver.findElement(shippingMethod).click();
+        //zamiast zwykłego findElement dla większej stabilności testów w FireFox
+        WebElement element = driver.findElement(shippingMethod);
+        JavascriptExecutor executor = (JavascriptExecutor)driver;
+        executor.executeScript("arguments[0].click();", element);
+
+        //driver.findElement(shippingMethod).click();
+
         wait.until(ExpectedConditions.invisibilityOfElementLocated(loadingIcon));
 
         driver.findElement(paymentMethod).click();
