@@ -8,6 +8,7 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.Keys;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -19,8 +20,9 @@ import org.testng.annotations.Test;
 import org.testng.asserts.SoftAssert;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.openqa.selenium.support.ui.ExpectedConditions.presenceOfElementLocated;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -95,8 +97,8 @@ public class StoreTests extends BaseTest {
         assertTrue(driver.findElement(By.cssSelector(editAddressSelector)).getText().contains("Adresy"), "Strona nie zawiera spodziewanego przycisku: Adresy");
         assertTrue(driver.findElement(By.cssSelector(paymentMethodsSelector)).getText().contains("Metody płatności"), "Strona nie zawiera spodziewanego przycisku: Metody płatności");
 
-        goToMyAccountSubpage(editAddressSelector, "adresy", myAccountContent);
-        goToMyAccountSubpage(paymentMethodsSelector, "metod", myAccountContent);
+        goToMyAccountSubpage(editAddressSelector, "adresy");
+        goToMyAccountSubpage(paymentMethodsSelector, "metod");
 
         deleteAccount();
     }
@@ -153,7 +155,7 @@ public class StoreTests extends BaseTest {
     }
 
     @Test
-    public void checkoutTest(){
+    public void checkoutTest() {
         addProductToCart("http://zelektronika.store/product/komputer");
         viewCart();
         driver.findElement(checkoutButton).click();
@@ -164,14 +166,13 @@ public class StoreTests extends BaseTest {
         checkConfirmationBox();
 
         int orderNumber = Integer.parseInt(orderAndWaitToComplete());
-        log.info("Zamówienie poprawnie złożone - nr zamówienia: " + orderNumber);
 
         int numberOfOrderReceivedMessages = driver.findElements(By.cssSelector(".woocommerce-thankyou-order-received")).size();
         int expectedNumberOfMessages = 1;
         assertEquals(numberOfOrderReceivedMessages, expectedNumberOfMessages, "Nieprawidłowy komunikat o otrzymaniu zamówienia, czy płatność została poprawnie przetworzona?");
 
         String dateFromSummary = driver.findElement(summaryDate).getText();
-        String currentDate = LocalDate.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy"));
+        String currentDate = getCurrentDate();
         String actualPrice = driver.findElement(summaryPrice).getText();
         String expectedPrice = "2008,99 zł";
         String actualPaymentMethod = driver.findElement(summaryPaymentMethod).getText();
@@ -183,32 +184,146 @@ public class StoreTests extends BaseTest {
         String actualProductName = driver.findElement(summaryProductName).getText();
         String expectedProductName = "Komputer";
 
-        assertAll(
-                () -> assertTrue(orderNumber > 0, "Numer zamówienia nie jest większy niż 0"),
-                () -> assertEquals(currentDate, dateFromSummary,
-                        "Data w podsumowaniu nieprawidłowa. Oczekiwana: " +
-                                currentDate + ", w podsumowaniu: " + dateFromSummary),
-                () -> assertEquals(expectedPrice, actualPrice,
-                        "Cena w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPrice +
-                                ", w podsumowaniu: " + actualPrice),
-                () -> assertEquals(expectedPaymentMethod, actualPaymentMethod,
-                        "Metoda płatności w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPaymentMethod +
-                                " w podsumowaniu: " + actualPaymentMethod),
-                () -> assertEquals(expectedNumberOfProducts, actualNumberOfProducts,
-                        "Produkty w podsumowaniu nieprawidłowe. Oczekiwane: " + expectedNumberOfProducts +
-                                " w podsumowaniu: " + actualNumberOfProducts),
-                () -> assertEquals(expectedProductQuantity, actualProductQuantity,
-                        "Liczba produktów w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductQuantity +
-                                " w podsumowaniu: " + actualProductQuantity),
-                () -> assertEquals(expectedProductName, actualProductName,
-                        "Nazwa produktu w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductName +
-                                " w podsumowaniu: " + actualProductName)
-                , () -> log.info("Dane w podsumowaniu zamówienia są poprawne"));
+        assertAll(() -> assertTrue(orderNumber > 0, "Numer zamówienia nie jest większy niż 0"), () -> assertEquals(currentDate, dateFromSummary, "Data w podsumowaniu nieprawidłowa. Oczekiwana: " + currentDate + ", w podsumowaniu: " + dateFromSummary), () -> assertEquals(expectedPrice, actualPrice, "Cena w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPrice + ", w podsumowaniu: " + actualPrice), () -> assertEquals(expectedPaymentMethod, actualPaymentMethod, "Metoda płatności w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPaymentMethod + " w podsumowaniu: " + actualPaymentMethod), () -> assertEquals(expectedNumberOfProducts, actualNumberOfProducts, "Produkty w podsumowaniu nieprawidłowe. Oczekiwane: " + expectedNumberOfProducts + " w podsumowaniu: " + actualNumberOfProducts), () -> assertEquals(expectedProductQuantity, actualProductQuantity, "Liczba produktów w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductQuantity + " w podsumowaniu: " + actualProductQuantity), () -> assertEquals(expectedProductName, actualProductName, "Nazwa produktu w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductName + " w podsumowaniu: " + actualProductName), () -> log.info("Dane w podsumowaniu zamówienia są poprawne"));
+    }
+
+    @Test
+    public void paymentTest() {
+        addProductToCart("http://zelektronika.store/product/komputer");
+        viewCart();
+        driver.findElement(checkoutButton).click();
+        String email = username + randomNumber + "@gmail.com";
+        fillOutCheckoutForm(email, "123456789");
+
+        fillOutCardData("4000000000000002", "0123", "456");
+        checkConfirmationBox();
+        driver.findElement(orderButton).click();
+
+        String actualErrorMessage = waitForErrorMessage();
+        log.info("Wyświetlony błąd: " + actualErrorMessage);
+        assertTrue(actualErrorMessage.contains("Data ważności karty już minęła."), "Błąd daty ważności karty nie został wyświetlony");
+
+        fillOutCardData("4000000000000002", "0227", "");
+        driver.findElement(orderButton).click();
+        actualErrorMessage = waitForErrorMessage();
+        log.info("Wyświetlony błąd: " + actualErrorMessage);
+        assertTrue(actualErrorMessage.contains("Kod bezpieczeństwa karty jest niekompletny."), "Błąd kodu CVC karty nie został wyświetlony");
+
+        fillOutCardData("4000000000000002", "0227", "456");
+        driver.findElement(orderButton).click();
+        actualErrorMessage = waitForErrorMessage();
+        log.info("Wyświetlony błąd: " + actualErrorMessage);
+
+        assertTrue(actualErrorMessage.contains("Karta została odrzucona."), "Błąd o odrzuceniu płatności nie został wyświetlony");
+
+        fillOutCardData("4242424242424242", "0227", "456");
+        orderAndWaitToComplete();
+
+        int numberOfOrderReceivedMessages = driver.findElements(By.cssSelector(".woocommerce-thankyou-order-received")).size();
+        assertEquals(numberOfOrderReceivedMessages, 1, "Nieprawidłowy komunikat o otrzymaniu zamówienia, czy płatność została poprawnie przetworzona?");
+    }
+
+    @Test
+    public void orderHistoryTest() {
+        addProductToCart("http://zelektronika.store/product/komputer");
+        viewCart();
+        driver.findElement(checkoutButton).click();
+
+        logInDuringCheckout("dmolewskisklep", "testowekontoztestowymhaslem");
+        fillOutCardData("4242424242424242", "0226", "456");
+
+        checkConfirmationBox();
+        int orderNumber = Integer.parseInt(orderAndWaitToComplete());
+
+        goToMyAccountOrders();
+
+        int numberOfOrdersWithGivenNumber = driver.findElements(By.xpath("//a[contains(text(), '#" + orderNumber + "')]")).size();
+
+        assertEquals(1, numberOfOrdersWithGivenNumber, "Expected one order with a given number (" + orderNumber + ") but found " + numberOfOrdersWithGivenNumber + " orders.");
+
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("table.shop_table")));
+
+        List<WebElement> orders = driver.findElements(By.cssSelector("table.shop_table tr.order"));
+        log.info("W tabeli wyświetlono (" + orders.size() + ") ostatnich zamówień");
+
+        for (WebElement order : orders) {
+            String orderNumberTable = order.findElement(By.cssSelector("td.woocommerce-orders-table__cell.woocommerce-orders-table__cell-order-number")).getText();
+            String orderDate = order.findElement(By.cssSelector("td.woocommerce-orders-table__cell.woocommerce-orders-table__cell-order-date")).getText();
+            String orderTotal = order.findElement(By.cssSelector("td.woocommerce-orders-table__cell.woocommerce-orders-table__cell-order-total")).getText();
+
+                        softAssert.assertNotNull(orderNumberTable, "Pole nr zamówienia jest puste dla zamówienia z datą: " + orderDate);
+            softAssert.assertNotNull(orderDate, "Pole data jest puste dla zamówienia: " + orderNumber);
+            softAssert.assertNotNull(orderTotal, "Pole kwota jest puste dla zamówienia: " + orderNumber);
+        }
+        log.info("Wszystkie zamówienia posiadają niepuste pole numer");
+        log.info("Wszystkie zamówienia posiadają niepuste pole data");
+        log.info("Wszystkie zamówienia posiadają niepuste pole z kwotą zamówienia");
+
+        WebElement viewButton = driver.findElement(By.cssSelector("td.woocommerce-orders-table__cell.woocommerce-orders-table__cell-order-actions a.woocommerce-button.wp-element-button.button.view"));
+        String href = viewButton.getAttribute("href");
+        viewButton.click();
+
+        log.info("Podsumowanie zamówienia nr " + orderNumber);
+        log.info("Link do podsumowania ostatniego zamówienia: " + href);
+
+        String[] hrefParts = href.split("/");
+        String actualOrderNumber = hrefParts[hrefParts.length - 1];
+        int actualOrderNumberInt = Integer.parseInt(actualOrderNumber);
+        assertEquals(actualOrderNumberInt, orderNumber, "Numer zamówienia z linku z tabeli nie jest równy temu ze złożonego w tescie zamówienia");
+
+        assertEquals(getAccountMessage(), "Zamówienie nr " + orderNumber + " złożone " + getCurrentDate() + " jest obecnie W trakcie realizacji.", "Numer zamówienia z linku z tabeli nie jest równy temu ze złożonego w tescie zamówienia");
+
+        checkOrderDetailsSection();
+
+        softAssert.assertAll();
+    }
+
+    private void checkOrderDetailsSection() {
+        wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("section.woocommerce-order-details")));
+        WebElement orderDetailsSection = driver.findElement(By.cssSelector("section.woocommerce-order-details"));
+
+        List<WebElement> orderDetailsLabels = orderDetailsSection.findElements(By.cssSelector("th"));
+        List<WebElement> orderDetailsValues = orderDetailsSection.findElements(By.cssSelector("td"));
+
+        for (int i = 0; i < orderDetailsLabels.size(); i++) {
+            String label = orderDetailsLabels.get(i).getText().trim();
+
+            String value = orderDetailsValues.get(i).getText().trim();
+            log.info(label + " " + value);
+            softAssert.assertNotNull(value, "Wartość pola: \"" + label + "\" jest pusta");
+        }
+
+        WebElement billingAddressSection = driver.findElement(By.cssSelector("div.woocommerce-column--billing-address"));
+        WebElement billingAddressElement = billingAddressSection.findElement(By.cssSelector("address"));
+        softAssert.assertNotNull(billingAddressElement, "Adres rozliczeniowy jest pusty");
+        log.info(billingAddressSection.getText());
+
+        WebElement shippingAddressSection = driver.findElement(By.cssSelector("div.woocommerce-column--shipping-address"));
+        WebElement shippingAddressElement = shippingAddressSection.findElement(By.cssSelector("address"));
+        log.info(shippingAddressSection.getText());
+        softAssert.assertNotNull(shippingAddressElement, "Adres do wysyłki jest pusty");
+
+        softAssert.assertAll();
+    }
+
+    private static String getCurrentDate() {
+        return LocalDate.now().format(DateTimeFormatter.ofPattern("d MMMM yyyy"));
+    }
+
+    private String waitForErrorMessage() {
+        By errorList = By.cssSelector("ul.woocommerce-error");
+        wait.until(d -> ((JavascriptExecutor) driver).executeScript("return document.readyState").equals("complete"));
+        return wait.until(ExpectedConditions.presenceOfElementLocated(errorList)).getText();
+    }
+
+    private String waitForMessage() {
+        wait.until(d -> ((JavascriptExecutor) driver).executeScript("return document.readyState").equals("complete"));
+        return wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".woocommerce-message"))).getText();
     }
 
     private void checkConfirmationBox() {
         driver.switchTo().defaultContent();
-        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".blockOverlay")));
+        wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector(".blockUI"), 0));
         WebElement confirmationBox = driver.findElement(By.cssSelector("input#terms"));
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", confirmationBox);
         confirmationBox.click();
@@ -223,6 +338,22 @@ public class StoreTests extends BaseTest {
         driver.findElement(By.cssSelector("button[name='login']")).click();
     }
 
+    private void logInDuringCheckout(String userName, String password) {
+        By expandLoginForm = By.cssSelector(".showlogin");
+        By wrappedLoginView = By.cssSelector(".login[style='display: none;']");
+
+        By usernameField = By.cssSelector("#username");
+        By passwordField = By.cssSelector("#password");
+        By loginButton = By.cssSelector("[name='login']");
+
+        wait.until(ExpectedConditions.elementToBeClickable(expandLoginForm)).click();
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(wrappedLoginView));
+        wait.until(ExpectedConditions.elementToBeClickable(usernameField)).sendKeys(userName);
+        wait.until(ExpectedConditions.elementToBeClickable(passwordField)).sendKeys(password);
+        driver.findElement(loginButton).click();
+        log.info("Zalogowano z nazwą użytkownika: " + userName);
+    }
+
     private void register(String email, String password) {
         driver.get(storeURL);
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("li[id='menu-item-19']"))).click();
@@ -235,14 +366,9 @@ public class StoreTests extends BaseTest {
         return driver.findElement(By.cssSelector("div[class='woocommerce-MyAccount-content']>p")).getText();
     }
 
-    private String getAccountOrdersMessage() {
-        return driver.findElement(By.cssSelector("div[class='woocommerce-message woocommerce-message--info woocommerce-Message woocommerce-Message--info woocommerce-info']")).getText();
-    }
-
     private void goToMyAccountOrders() {
         driver.findElement(By.cssSelector("li[id='menu-item-19']")).click();
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(".woocommerce-MyAccount-navigation-link--orders"))).click();
-        //wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".woocommerce-MyAccount-orders")));
     }
 
     private void deleteAccount() {
@@ -250,16 +376,11 @@ public class StoreTests extends BaseTest {
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("div[class='wpfda-submit'] button[type='submit']"))).click();
     }
 
-    private void goToMyAccountAddress() {
-        driver.findElement(By.cssSelector("li[id='menu-item-19']")).click();
-        wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector(".woocommerce-MyAccount-navigation-link--edit-address"))).click();
-    }
-
     private String getErrorMessage() {
         return driver.findElement(By.cssSelector("ul[class='woocommerce-error']")).getText();
     }
 
-    private void goToMyAccountSubpage(String selector, String expectedText, String myAccountContent) {
+    private void goToMyAccountSubpage(String selector, String expectedText) {
         clickAndWait(By.cssSelector("li[id='menu-item-19']"));
         clickAndWait(By.cssSelector(selector));
         String subpageContent = driver.findElement(By.cssSelector("div[class='woocommerce-MyAccount-content']>p")).getText();
@@ -275,7 +396,13 @@ public class StoreTests extends BaseTest {
     private void searchForProduct(String productName) {
         WebElement searchBox = driver.findElement(By.cssSelector(".woocommerce-product-search input"));
         searchBox.sendKeys(productName);
-        searchBox.sendKeys(Keys.ENTER);
+
+        Actions actions = new Actions(driver);
+        actions.moveToElement(searchBox);
+        actions.click();
+        actions.sendKeys(Keys.ENTER).perform();
+
+        //searchBox.sendKeys(productName, Keys.RETURN); //tylko dla Chrome, Firefox wymusza użycie klasy Actions w przypadku użycia klawisza ENTER/RETURN
     }
 
     private void sortByPriceLowToHigh() {
@@ -299,7 +426,7 @@ public class StoreTests extends BaseTest {
 
     private void verifySearchResults(String searchTerm) {
         WebDriverWait wait = new WebDriverWait(driver, 10);
-        wait.until(presenceOfElementLocated(By.cssSelector(".woocommerce-products-header")));
+        wait.until(ExpectedConditions.urlContains(searchTerm));
 
         List<WebElement> searchResultElements = driver.findElements(By.cssSelector(".product"));
         int numSearchResults = searchResultElements.size();
@@ -364,9 +491,12 @@ public class StoreTests extends BaseTest {
     private void addCoupon() {
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("#coupon_code"))).sendKeys("rabatwsti");
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("button[value='Wykorzystaj kupon']"))).click();
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".woocommerce-message")));
 
-        assertTrue(driver.findElement(By.cssSelector(".woocommerce-message")).getText().contains("Kupon został pomyślnie użyty."), "Kupon nie został dodany do koszyka");
+        String couponMessage = waitForMessage();
+
+        String expectedCouponMessage = "Kupon został pomyślnie użyty.";
+        assertEquals(expectedCouponMessage, couponMessage, "Kupon nie został dodany do koszyka");
+
         log.info("Dodano kupon rabatowy");
         wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector(".blockUI"), 0));
 
@@ -377,8 +507,7 @@ public class StoreTests extends BaseTest {
     private void addToCartCheck() {
         String productName = driver.findElement(By.cssSelector(".product_title.entry-title")).getText();
 
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".woocommerce-message")));
-        assertTrue(driver.findElement(By.cssSelector(".woocommerce-message")).getText().contains("„" + productName + "” został dodany do koszyka."), "Produkt „" + productName + "” nie został dodany do koszyka");
+        assertTrue(waitForMessage().contains("„" + productName + "” został dodany do koszyka."), "Produkt „" + productName + "” nie został dodany do koszyka");
         log.info("Dodano nowy produkt do koszyka: „" + productName + "”");
     }
 
@@ -409,18 +538,21 @@ public class StoreTests extends BaseTest {
 
         switchToFrame(cardNumberFrame);
         WebElement cardNumberElement = wait.until(ExpectedConditions.elementToBeClickable(cardNumberField));
-
+        cardNumberElement.clear();
         slowType(cardNumberElement, cardNumber);
         driver.switchTo().defaultContent();
+
         switchToFrame(expirationDateFrame);
         WebElement expirationDateElement = wait.until(ExpectedConditions.elementToBeClickable(expirationDateField));
+        expirationDateElement.clear();
         slowType(expirationDateElement, expirationDate);
         driver.switchTo().defaultContent();
+
         switchToFrame(cvcFrame);
         WebElement cvcElement = wait.until(ExpectedConditions.elementToBeClickable(cvcField));
+        cvcElement.clear();
         slowType(cvcElement, cvc);
         driver.switchTo().defaultContent();
-
     }
 
     private String orderAndWaitToComplete() {
@@ -429,7 +561,7 @@ public class StoreTests extends BaseTest {
 
         WebDriverWait wait = new WebDriverWait(driver, 20);
         wait.until(ExpectedConditions.urlContains("/checkout/zamowienie-otrzymane/"));
-
+        log.info("Zamówienie złożone poprawnie - nr zamówienia: " + wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".order>strong"))).getText());
         return wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".order>strong"))).getText();
     }
 
@@ -442,5 +574,14 @@ public class StoreTests extends BaseTest {
     private void switchToFrame(By frameLocator) {
         wait.until(ExpectedConditions.frameToBeAvailableAndSwitchToIt(frameLocator));
         wait.until(d -> ((JavascriptExecutor) driver).executeScript("return document.readyState").equals("complete"));
+    }
+
+    private void checkErrors() {
+        String errorMessage = getErrorMessage();
+        assertAll(() -> assertTrue(errorMessage.contains("Imię płatnika jest wymaganym polem."), "Błąd o braku imienia:"), () -> assertTrue(errorMessage.contains("Nazwisko płatnika jest wymaganym polem."), "Błąd o braku nazwiska:"), () -> assertTrue(errorMessage.contains("Ulica płatnika jest wymaganym polem."), "Błąd o braku ulicy:"), () -> assertTrue(errorMessage.contains("Miasto płatnika jest wymaganym polem."), "Błąd o braku miasta:"), () -> assertTrue(errorMessage.contains("Telefon płatnika jest wymaganym polem."), "Błąd o braku telefonu:"), () -> assertTrue(errorMessage.contains("Adres email płatnika jest wymaganym polem."), "Błąd o braku adresu e-mail:"), () -> assertTrue(errorMessage.contains("Kod pocztowy płatnika nie jest prawidłowym kodem pocztowym."), "Błąd o braku braku kodu pocztowego:"), () -> log.info("Brak błędów walidacyjnych"));
+
+        String alert = "Proszę przeczytać i zaakceptować regulamin, aby kontynuować składanie zamówienia.";
+        assertFalse(driver.findElement(By.cssSelector("ul[role='alert'] li")).getText().contains(alert), "Strona zawiera komunikat o nie zaznaczeniu regulaminu");
+        log.info("Znaleziono komunikat: " + alert);
     }
 }
