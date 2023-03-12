@@ -184,7 +184,15 @@ public class StoreTests extends BaseTest {
         String actualProductName = driver.findElement(summaryProductName).getText();
         String expectedProductName = "Komputer";
 
-        assertAll(() -> assertTrue(orderNumber > 0, "Numer zamówienia nie jest większy niż 0"), () -> assertEquals(currentDate, dateFromSummary, "Data w podsumowaniu nieprawidłowa. Oczekiwana: " + currentDate + ", w podsumowaniu: " + dateFromSummary), () -> assertEquals(expectedPrice, actualPrice, "Cena w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPrice + ", w podsumowaniu: " + actualPrice), () -> assertEquals(expectedPaymentMethod, actualPaymentMethod, "Metoda płatności w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPaymentMethod + " w podsumowaniu: " + actualPaymentMethod), () -> assertEquals(expectedNumberOfProducts, actualNumberOfProducts, "Produkty w podsumowaniu nieprawidłowe. Oczekiwane: " + expectedNumberOfProducts + " w podsumowaniu: " + actualNumberOfProducts), () -> assertEquals(expectedProductQuantity, actualProductQuantity, "Liczba produktów w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductQuantity + " w podsumowaniu: " + actualProductQuantity), () -> assertEquals(expectedProductName, actualProductName, "Nazwa produktu w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductName + " w podsumowaniu: " + actualProductName), () -> log.info("Dane w podsumowaniu zamówienia są poprawne"));
+        assertAll(
+                () -> assertTrue(orderNumber > 0, "Numer zamówienia nie jest większy niż 0"),
+                () -> assertEquals(currentDate, dateFromSummary, "Data w podsumowaniu nieprawidłowa. Oczekiwana: " + currentDate + ", w podsumowaniu: " + dateFromSummary),
+                () -> assertEquals(expectedPrice, actualPrice, "Cena w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPrice + ", w podsumowaniu: " + actualPrice),
+                () -> assertEquals(expectedPaymentMethod, actualPaymentMethod, "Metoda płatności w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPaymentMethod + " w podsumowaniu: " + actualPaymentMethod),
+                () -> assertEquals(expectedNumberOfProducts, actualNumberOfProducts, "Produkty w podsumowaniu nieprawidłowe. Oczekiwane: " + expectedNumberOfProducts + " w podsumowaniu: " + actualNumberOfProducts),
+                () -> assertEquals(expectedProductQuantity, actualProductQuantity, "Liczba produktów w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductQuantity + " w podsumowaniu: " + actualProductQuantity),
+                () -> assertEquals(expectedProductName, actualProductName, "Nazwa produktu w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductName + " w podsumowaniu: " + actualProductName),
+                () -> log.info("Dane w podsumowaniu zamówienia są poprawne"));
     }
 
     @Test
@@ -201,26 +209,27 @@ public class StoreTests extends BaseTest {
 
         String actualErrorMessage = waitForErrorMessage();
         log.info("Wyświetlony błąd: " + actualErrorMessage);
-        assertTrue(actualErrorMessage.contains("Data ważności karty już minęła."), "Błąd daty ważności karty nie został wyświetlony");
+        softAssert.assertTrue(actualErrorMessage.contains("Data ważności karty już minęła."), "Błąd daty ważności karty nie został wyświetlony");
 
         fillOutCardData("4000000000000002", "0227", "");
         driver.findElement(orderButton).click();
         actualErrorMessage = waitForErrorMessage();
         log.info("Wyświetlony błąd: " + actualErrorMessage);
-        assertTrue(actualErrorMessage.contains("Kod bezpieczeństwa karty jest niekompletny."), "Błąd kodu CVC karty nie został wyświetlony");
+        softAssert.assertTrue(actualErrorMessage.contains("Kod bezpieczeństwa karty jest niekompletny."), "Błąd kodu CVC karty nie został wyświetlony");
 
         fillOutCardData("4000000000000002", "0227", "456");
         driver.findElement(orderButton).click();
         actualErrorMessage = waitForErrorMessage();
         log.info("Wyświetlony błąd: " + actualErrorMessage);
-
-        assertTrue(actualErrorMessage.contains("Karta została odrzucona."), "Błąd o odrzuceniu płatności nie został wyświetlony");
+        softAssert.assertTrue(actualErrorMessage.contains("Karta została odrzucona."), "Błąd o odrzuceniu płatności nie został wyświetlony");
 
         fillOutCardData("4242424242424242", "0227", "456");
         orderAndWaitToComplete();
 
         int numberOfOrderReceivedMessages = driver.findElements(By.cssSelector(".woocommerce-thankyou-order-received")).size();
         assertEquals(numberOfOrderReceivedMessages, 1, "Nieprawidłowy komunikat o otrzymaniu zamówienia, czy płatność została poprawnie przetworzona?");
+
+        softAssert.assertAll();
     }
 
     @Test
