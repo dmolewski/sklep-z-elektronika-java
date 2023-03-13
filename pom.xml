@@ -68,7 +68,6 @@
                     <target>1.8</target> <!--For JAVA 8 use 1.8-->
                 </configuration>
             </plugin>
-
             <plugin>
                 <groupId>io.qameta.allure</groupId>
                 <artifactId>allure-maven</artifactId>
