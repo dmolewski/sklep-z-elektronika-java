@@ -3,11 +3,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebElement;
+import io.github.bonigarcia.wdm.WebDriverManager;
+import org.openqa.selenium.*;
+import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
@@ -74,8 +74,28 @@ public class StoreTests extends BaseTest {
     By summaryProductQuantity = By.cssSelector(".product-quantity");
     By summaryProductName = By.cssSelector(".product-name>a");
 
+
+    WebDriver driver;
+    WebDriverWait wait;
+
     @BeforeTest
     public void prepareTests() {
+            WebDriverManager.chromedriver().setup();
+            driver = new ChromeDriver();
+            driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
+            wait = new WebDriverWait(driver, 7);
+
+            //driver.manage().window().setSize(new Dimension(1400, 800));
+            driver.manage().window().maximize();
+            //driver.manage().window().setPosition(new Point(0, 0));
+
+
+
+            driver.manage().deleteAllCookies();
+            driver.navigate().to("http://zelektronika.store");
+
+            driver.findElement(By.cssSelector(".woocommerce-store-notice__dismiss-link")).click();
+
         softAssert = new SoftAssert();
     }
 
@@ -326,6 +346,8 @@ public class StoreTests extends BaseTest {
     }
 
     private String waitForMessage() {
+        WebDriverWait wait = new WebDriverWait(driver, 10);
+
         wait.until(d -> ((JavascriptExecutor) driver).executeScript("return document.readyState").equals("complete"));
         return wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector(".woocommerce-message"))).getText();
     }
@@ -364,6 +386,8 @@ public class StoreTests extends BaseTest {
     }
 
     private void register(String email, String password) {
+        WebDriverWait wait = new WebDriverWait(driver, 10);
+
         driver.get(storeURL);
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("li[id='menu-item-19']"))).click();
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("input[id='reg_email']"))).sendKeys(email);
@@ -458,6 +482,8 @@ public class StoreTests extends BaseTest {
     }
 
     private void addProductToCart() {
+        WebDriverWait wait = new WebDriverWait(driver, 10);
+
         WebElement addToCartButton = driver.findElement(productPageAddToCartButton);
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView(true);", addToCartButton);
         addToCartButton.click();
@@ -476,6 +502,8 @@ public class StoreTests extends BaseTest {
     }
 
     private double addProductPrice() {
+        WebDriverWait wait = new WebDriverWait(driver, 10);
+
         String productPriceText = driver.findElement(By.cssSelector("div[class='summary entry-summary'] bdi:nth-child(1)")).getText();
         double productPrice = Double.parseDouble(productPriceText.replaceAll("[^0-9.,]+", "").replace(",", "."));
         wait.until(ExpectedConditions.presenceOfElementLocated(By.cssSelector("div[id='content'] p[class='woocommerce-mini-cart__total total'] bdi:nth-child(1)")));

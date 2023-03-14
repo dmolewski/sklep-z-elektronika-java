@@ -6,10 +6,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.io.FileHandler;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Listeners;
+import org.testng.annotations.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,32 +18,40 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.TimeUnit;
 
 
-@Listeners({TestListener.class})
 public class BaseTest {
     protected WebDriver driver;
     protected WebDriverWait wait;
 
-    @BeforeTest
-    public void testSetUp() {
-        WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
-        driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
-        wait = new WebDriverWait(driver, 7);
+//    @BeforeTest
+//    public void testSetUp() {
+//        WebDriverManager.chromedriver().setup();
+//        driver = new ChromeDriver();
+//        driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
+//        wait = new WebDriverWait(driver, 7);
+//
+//        //driver.manage().window().setSize(new Dimension(1400, 800));
+//        driver.manage().window().maximize();
+//        //driver.manage().window().setPosition(new Point(0, 0));
+//
+//
+//
+//        driver.manage().deleteAllCookies();
+//        driver.navigate().to("http://zelektronika.store");
+//
+//        driver.findElement(By.cssSelector(".woocommerce-store-notice__dismiss-link")).click();
+//    }
 
-        //driver.manage().window().setSize(new Dimension(1400, 800));
-        driver.manage().window().maximize();
-        //driver.manage().window().setPosition(new Point(0, 0));
-    }
+//    @BeforeMethod
+//    public void clearCacheAndDismissNotice() {
+//        driver = new ChromeDriver();
+//
+//        driver.manage().deleteAllCookies();
+//        driver.navigate().to("http://zelektronika.store");
+//
+//        driver.findElement(By.cssSelector(".woocommerce-store-notice__dismiss-link")).click();
+//    }
 
-    @BeforeMethod
-    public void clearCacheAndDismissNotice() {
-        driver.manage().deleteAllCookies();
-        driver.navigate().to("http://zelektronika.store");
-
-        driver.findElement(By.cssSelector(".woocommerce-store-notice__dismiss-link")).click();
-    }
-
-    @AfterClass
+    @AfterTest
     public void closeBrowser() {
         driver.quit();
     }
