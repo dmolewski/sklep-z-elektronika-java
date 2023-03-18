@@ -5,6 +5,7 @@ import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.io.FileHandler;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.annotations.*;
@@ -24,11 +25,12 @@ public class BaseTest {
 
     @BeforeClass
     public void testSetUp() {
-        WebDriverManager.chromedriver().setup();
-        ChromeOptions options = new ChromeOptions();
-        driver = new ChromeDriver(options);
+        WebDriverManager.firefoxdriver().setup();
+        FirefoxOptions options = new FirefoxOptions();
+        driver = new FirefoxDriver(options);
         //options.addArguments("--headless");
-        options.addArguments("--disable-extensions");
+        //options.addArguments("--disable-extensions");
+        options.addPreference("extensions.webextensions.enabled", false);
 
         driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
         wait = new WebDriverWait(driver, 10);
