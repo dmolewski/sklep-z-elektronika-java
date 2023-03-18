@@ -6,9 +6,7 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.io.FileHandler;
 import org.openqa.selenium.support.ui.WebDriverWait;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +21,7 @@ public class BaseTest {
     protected WebDriver driver;
     protected WebDriverWait wait;
 
-    @BeforeTest
+    @BeforeClass
     public void testSetUp() {
         WebDriverManager.chromedriver().setup();
         driver = new ChromeDriver();
@@ -33,14 +31,7 @@ public class BaseTest {
         //driver.manage().window().setSize(new Dimension(1400, 800));
         driver.manage().window().maximize();
         //driver.manage().window().setPosition(new Point(0, 0));
-    }
-
-    @BeforeMethod
-    public void clearCacheAndDismissNotice() {
-        driver.manage().deleteAllCookies();
         driver.navigate().to("http://zelektronika.store");
-
-        driver.findElement(By.cssSelector(".woocommerce-store-notice__dismiss-link")).click();
     }
 
     @AfterClass

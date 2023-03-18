@@ -4,19 +4,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.JavascriptExecutor;
-import org.openqa.selenium.Keys;
-import org.openqa.selenium.WebElement;
+import io.qameta.allure.Description;
+import org.openqa.selenium.*;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Select;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Listeners;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 import org.testng.asserts.SoftAssert;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
@@ -74,12 +70,22 @@ public class StoreTests extends BaseTest {
     By summaryProductQuantity = By.cssSelector(".product-quantity");
     By summaryProductName = By.cssSelector(".product-name>a");
 
-    @BeforeTest
+    @BeforeMethod
     public void prepareTests() {
         softAssert = new SoftAssert();
     }
 
-    @Test
+    @AfterMethod
+    public void clearCache() {
+        if (driver != null) {
+            driver.manage().deleteAllCookies();
+        }
+    }
+
+    @Test(priority = 1, description = "Test rejestracji z prawidłowymi danymi")
+    @Description("Przypadek testowy dotyczy wymagania pierwszego.\n" +
+            "Rejestracja i logowanie: Klienci powinni mieć możliwość zarejestrowania się i zalogowania na swoje konto, aby mieć dostęp do swoich danych i historii zakupów.")
+
     public void registerWithEmailAndPassword() {
         String email = username + randomNumber + "@gmail.com";
         register(email, password);
@@ -101,9 +107,14 @@ public class StoreTests extends BaseTest {
         goToMyAccountSubpage(paymentMethodsSelector, "metod");
 
         deleteAccount();
+        //logOut();
+        driver.navigate().to("http://zelektronika.store");
     }
 
-    @Test
+    @Test(priority = 2, description = "Test wyszukiwania produktów i sortowania wyników")
+    @Description("Przypadek testowy dotyczy wymagania drugiego.\n" +
+            "Katalog produktów: Sklep powinien posiadać wygodny i przejrzysty katalog produktów, który umożliwia łatwe wyszukiwanie i sortowanie produktów.")
+
     public void searchInStoreAndSortResults() {
         String productName = "komputer";
         searchForProduct(productName);
@@ -121,7 +132,11 @@ public class StoreTests extends BaseTest {
         log.info("Posortowane ceny produktów: " + sortedPrices);
     }
 
-    @Test
+    @Test(priority = 3, description = "Test szybkiego dodawania produktów do koszyka")
+    @Description("Przypadek testowy dotyczy wymagania trzeciego i czwartego.\n" +
+            "Szybkie dodawanie do koszyka: Klienci powinni mieć możliwość szybkiego dodawania produktów do koszyka za pomocą jednego kliknięcia.\n" +
+            "Koszyk: Klienci powinni mieć możliwość przeglądania i modyfikowania produktów w swoim koszyku, dodania kodu rabatowego a także przejścia do procesu zamówienia.")
+
     public void addToShoppingCart() {
         String[] productPages = {"/drukarka/", "/glosnik/", "/komputer/",
                 //"/komputer-przenosny/", "/monitor/", "/mysz-komputerowa/", "/sluchawki/", "/tablet/"
@@ -154,7 +169,11 @@ public class StoreTests extends BaseTest {
         assertEquals(productPages.length - 1, numberOfItems, "Ilość produktów w koszyku jest nieprawidłowa. Wymagane: " + productPages.length + ", w ramach testu obliczono: " + numberOfItems);
     }
 
-    @Test
+    @Test(priority = 4, description = "Test wypełniania formularza i składania zamówienia")
+    @Description("Przypadek testowy dotyczy wymagania piątego oraz siódmego.\n" +
+            "Wypełnianie formularza zamówienia: Klienci powinni mieć możliwość wypełnienia formularza zamówienia, w którym będą wprowadzać swoje dane i informacje dotyczące dostawy.\n" +
+            "Potwierdzenie zamówienia: Po zakończeniu procesu zamówienia, klienci powinni otrzymać potwierdzenie zamówienia.")
+
     public void checkoutTest() {
         addProductToCart("http://zelektronika.store/product/komputer");
         viewCart();
@@ -184,10 +203,21 @@ public class StoreTests extends BaseTest {
         String actualProductName = driver.findElement(summaryProductName).getText();
         String expectedProductName = "Komputer";
 
-        assertAll(() -> assertTrue(orderNumber > 0, "Numer zamówienia nie jest większy niż 0"), () -> assertEquals(currentDate, dateFromSummary, "Data w podsumowaniu nieprawidłowa. Oczekiwana: " + currentDate + ", w podsumowaniu: " + dateFromSummary), () -> assertEquals(expectedPrice, actualPrice, "Cena w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPrice + ", w podsumowaniu: " + actualPrice), () -> assertEquals(expectedPaymentMethod, actualPaymentMethod, "Metoda płatności w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPaymentMethod + " w podsumowaniu: " + actualPaymentMethod), () -> assertEquals(expectedNumberOfProducts, actualNumberOfProducts, "Produkty w podsumowaniu nieprawidłowe. Oczekiwane: " + expectedNumberOfProducts + " w podsumowaniu: " + actualNumberOfProducts), () -> assertEquals(expectedProductQuantity, actualProductQuantity, "Liczba produktów w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductQuantity + " w podsumowaniu: " + actualProductQuantity), () -> assertEquals(expectedProductName, actualProductName, "Nazwa produktu w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductName + " w podsumowaniu: " + actualProductName), () -> log.info("Dane w podsumowaniu zamówienia są poprawne"));
+        assertAll(
+                () -> assertTrue(orderNumber > 0, "Numer zamówienia nie jest większy niż 0"),
+                () -> assertEquals(currentDate, dateFromSummary, "Data w podsumowaniu nieprawidłowa. Oczekiwana: " + currentDate + ", w podsumowaniu: " + dateFromSummary),
+                () -> assertEquals(expectedPrice, actualPrice, "Cena w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPrice + ", w podsumowaniu: " + actualPrice),
+                () -> assertEquals(expectedPaymentMethod, actualPaymentMethod, "Metoda płatności w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedPaymentMethod + " w podsumowaniu: " + actualPaymentMethod),
+                () -> assertEquals(expectedNumberOfProducts, actualNumberOfProducts, "Produkty w podsumowaniu nieprawidłowe. Oczekiwane: " + expectedNumberOfProducts + " w podsumowaniu: " + actualNumberOfProducts),
+                () -> assertEquals(expectedProductQuantity, actualProductQuantity, "Liczba produktów w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductQuantity + " w podsumowaniu: " + actualProductQuantity),
+                () -> assertEquals(expectedProductName, actualProductName, "Nazwa produktu w podsumowaniu nieprawidłowa. Oczekiwana: " + expectedProductName + " w podsumowaniu: " + actualProductName),
+                () -> log.info("Dane w podsumowaniu zamówienia są poprawne"));
     }
 
-    @Test
+    @Test(priority = 5, description = "Test modułu płatności, weryfikacji i autoryzacji płatności testowymi kartami")
+    @Description("Przypadek testowy dotyczy wymagania szóstego.\n" +
+            "Weryfikacja płatności: Sklep powinien umożliwiać weryfikację i autoryzację płatności przed dokonaniem transakcji.")
+
     public void paymentTest() {
         addProductToCart("http://zelektronika.store/product/komputer");
         viewCart();
@@ -201,29 +231,33 @@ public class StoreTests extends BaseTest {
 
         String actualErrorMessage = waitForErrorMessage();
         log.info("Wyświetlony błąd: " + actualErrorMessage);
-        assertTrue(actualErrorMessage.contains("Data ważności karty już minęła."), "Błąd daty ważności karty nie został wyświetlony");
+        softAssert.assertTrue(actualErrorMessage.contains("Data ważności karty już minęła."), "Błąd daty ważności karty nie został wyświetlony");
 
         fillOutCardData("4000000000000002", "0227", "");
         driver.findElement(orderButton).click();
         actualErrorMessage = waitForErrorMessage();
         log.info("Wyświetlony błąd: " + actualErrorMessage);
-        assertTrue(actualErrorMessage.contains("Kod bezpieczeństwa karty jest niekompletny."), "Błąd kodu CVC karty nie został wyświetlony");
+        softAssert.assertTrue(actualErrorMessage.contains("Kod bezpieczeństwa karty jest niekompletny."), "Błąd kodu CVC karty nie został wyświetlony");
 
         fillOutCardData("4000000000000002", "0227", "456");
         driver.findElement(orderButton).click();
         actualErrorMessage = waitForErrorMessage();
         log.info("Wyświetlony błąd: " + actualErrorMessage);
-
-        assertTrue(actualErrorMessage.contains("Karta została odrzucona."), "Błąd o odrzuceniu płatności nie został wyświetlony");
+        softAssert.assertTrue(actualErrorMessage.contains("Karta została odrzucona."), "Błąd o odrzuceniu płatności nie został wyświetlony");
 
         fillOutCardData("4242424242424242", "0227", "456");
         orderAndWaitToComplete();
 
         int numberOfOrderReceivedMessages = driver.findElements(By.cssSelector(".woocommerce-thankyou-order-received")).size();
         assertEquals(numberOfOrderReceivedMessages, 1, "Nieprawidłowy komunikat o otrzymaniu zamówienia, czy płatność została poprawnie przetworzona?");
+
+        softAssert.assertAll();
     }
 
-    @Test
+    @Test(priority = 6, description = "Test historii i szczegółów zamówień")
+    @Description("Przypadek testowy dotyczy wymagania ósmego.\n" +
+            "Historia zamówień: Klienci powinni mieć dostęp do swojej historii zamówień i szczegółów dotyczących każdego z nich.")
+
     public void orderHistoryTest() {
         addProductToCart("http://zelektronika.store/product/komputer");
         viewCart();
@@ -251,7 +285,7 @@ public class StoreTests extends BaseTest {
             String orderDate = order.findElement(By.cssSelector("td.woocommerce-orders-table__cell.woocommerce-orders-table__cell-order-date")).getText();
             String orderTotal = order.findElement(By.cssSelector("td.woocommerce-orders-table__cell.woocommerce-orders-table__cell-order-total")).getText();
 
-                        softAssert.assertNotNull(orderNumberTable, "Pole nr zamówienia jest puste dla zamówienia z datą: " + orderDate);
+            softAssert.assertNotNull(orderNumberTable, "Pole nr zamówienia jest puste dla zamówienia z datą: " + orderDate);
             softAssert.assertNotNull(orderDate, "Pole data jest puste dla zamówienia: " + orderNumber);
             softAssert.assertNotNull(orderTotal, "Pole kwota jest puste dla zamówienia: " + orderNumber);
         }
@@ -376,6 +410,10 @@ public class StoreTests extends BaseTest {
         wait.until(ExpectedConditions.elementToBeClickable(By.cssSelector("div[class='wpfda-submit'] button[type='submit']"))).click();
     }
 
+    private void logOut() {
+        driver.findElement(By.cssSelector("li[class$='woocommerce-MyAccount-navigation-link--customer-logout'] a")).click();
+    }
+
     private String getErrorMessage() {
         return driver.findElement(By.cssSelector("ul[class='woocommerce-error']")).getText();
     }
@@ -425,7 +463,6 @@ public class StoreTests extends BaseTest {
     }
 
     private void verifySearchResults(String searchTerm) {
-        WebDriverWait wait = new WebDriverWait(driver, 10);
         wait.until(ExpectedConditions.urlContains(searchTerm));
         wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.cssSelector(".product")));
 
@@ -455,7 +492,7 @@ public class StoreTests extends BaseTest {
         wait.until(ExpectedConditions.elementToBeClickable(productPageViewCartButton));
     }
 
-    private void addProductToCart(String productPageUrl) {
+    public void addProductToCart(String productPageUrl) {
         driver.navigate().to(productPageUrl);
         addProductToCart();
         addToCartCheck();
@@ -524,7 +561,9 @@ public class StoreTests extends BaseTest {
         wait.until(ExpectedConditions.elementToBeClickable(postalCodeField)).clear();
         wait.until(ExpectedConditions.elementToBeClickable(postalCodeField)).sendKeys("71-232");
         wait.until(ExpectedConditions.elementToBeClickable(cityField)).sendKeys("Szczecin");
+        wait.until(ExpectedConditions.elementToBeClickable(phoneField)).clear();
         wait.until(ExpectedConditions.elementToBeClickable(phoneField)).sendKeys(phone);
+        wait.until(ExpectedConditions.elementToBeClickable(emailField)).clear();
         wait.until(ExpectedConditions.elementToBeClickable(emailField)).sendKeys(email);
     }
 
@@ -533,7 +572,7 @@ public class StoreTests extends BaseTest {
 
         //zamiast zwykłego findElement dla większej stabilności testów w FireFox
         WebElement element = driver.findElement(shippingMethod);
-        JavascriptExecutor executor = (JavascriptExecutor)driver;
+        JavascriptExecutor executor = (JavascriptExecutor) driver;
         executor.executeScript("arguments[0].click();", element);
 
         //driver.findElement(shippingMethod).click();
