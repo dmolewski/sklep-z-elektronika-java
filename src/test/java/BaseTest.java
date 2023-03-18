@@ -3,6 +3,7 @@ import io.qameta.allure.Allure;
 
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.io.FileHandler;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -24,9 +25,13 @@ public class BaseTest {
     @BeforeClass
     public void testSetUp() {
         WebDriverManager.chromedriver().setup();
-        driver = new ChromeDriver();
+        ChromeOptions options = new ChromeOptions();
+        driver = new ChromeDriver(options);
+        //options.addArguments("--headless");
+        options.addArguments("--disable-extensions");
+
         driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
-        wait = new WebDriverWait(driver, 7);
+        wait = new WebDriverWait(driver, 10);
 
         //driver.manage().window().setSize(new Dimension(1400, 800));
         driver.manage().window().maximize();
