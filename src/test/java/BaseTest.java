@@ -1,9 +1,12 @@
+import io.github.bonigarcia.wdm.EdgeDriverManager;
 import io.github.bonigarcia.wdm.WebDriverManager;
 import io.qameta.allure.Allure;
 
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.edge.EdgeDriver;
+import org.openqa.selenium.edge.EdgeOptions;
 import org.openqa.selenium.firefox.FirefoxDriver;
 import org.openqa.selenium.firefox.FirefoxOptions;
 import org.openqa.selenium.io.FileHandler;
@@ -27,11 +30,13 @@ public class BaseTest {
 
     @BeforeClass
     public void testSetUp() {
-        WebDriverManager.operadriver().setup();
-        OperaOptions options = new OperaOptions();
-        driver = new OperaDriver(options);
+
+        System.setProperty("webdriver.edge.driver", "C:\\msedgedriver.exe");
+
+        EdgeOptions options = new EdgeOptions();
+        driver = new EdgeDriver(options);
         //options.addArguments("--headless");
-        options.addArguments("--disable-extensions");
+        //options.addArguments("--disable-extensions");
         //options.addPreference("extensions.webextensions.enabled", false);
 
         driver.manage().timeouts().pageLoadTimeout(10, TimeUnit.SECONDS);
